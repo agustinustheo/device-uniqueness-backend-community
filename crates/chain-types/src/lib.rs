@@ -521,6 +521,43 @@ mod tests {
         "StorageWeightReclaim",
     ];
 
+    /// What `next-people-paseo` 3002000 (individuality-community #101,
+    /// transaction_version 6) declares at extension version 0: the frozen
+    /// standard pipeline with the Individuality gates moved into a separate
+    /// version-1 pipeline. `CheckMetadataHash` is new against 3000000.
+    const PEOPLE_3002000_V0_EXTENSIONS: &[&str] = &[
+        "AuthorizeCall",
+        "CheckNonZeroSender",
+        "CheckSpecVersion",
+        "CheckTxVersion",
+        "CheckGenesis",
+        "CheckMortality",
+        "CheckNonce",
+        "CheckWeight",
+        "ChargeAssetTxPayment",
+        "CheckMetadataHash",
+        "StorageWeightReclaim",
+    ];
+
+    /// What `next-asset-hub-paseo` 3002000 (individuality-community #101,
+    /// transaction_version 22) declares at extension version 0: the frozen
+    /// standard pipeline, with `PrevalidateAttests` new against 3000000.
+    const ASSET_HUB_3002000_V0_EXTENSIONS: &[&str] = &[
+        "AuthorizeCall",
+        "CheckNonZeroSender",
+        "CheckSpecVersion",
+        "CheckTxVersion",
+        "CheckGenesis",
+        "CheckMortality",
+        "CheckNonce",
+        "CheckWeight",
+        "ChargeAssetTxPayment",
+        "PrevalidateAttests",
+        "CheckMetadataHash",
+        "EthSetOrigin",
+        "StorageWeightReclaim",
+    ];
+
     /// Every runtime a deployment is known to have talked to. The tuples are
     /// the union of these sets, not a snapshot of the newest one: an entry
     /// stays here — and its gate stays in the tuple — so that a binary
@@ -539,6 +576,20 @@ mod tests {
             spec_version: 2_005_000,
             tuple: ASSET_HUB_TUPLE_EXTENSIONS,
             extensions: ASSET_HUB_POLKADOT_2005000_EXTENSIONS,
+        },
+        KnownRuntime {
+            env: "paseo-next-v2 / previewnet (individuality-community #101)",
+            spec_name: "next-people-paseo",
+            spec_version: 3_002_000,
+            tuple: TUPLE_EXTENSIONS,
+            extensions: PEOPLE_3002000_V0_EXTENSIONS,
+        },
+        KnownRuntime {
+            env: "paseo-next-v2 / previewnet asset hub (individuality-community #101)",
+            spec_name: "next-asset-hub-paseo",
+            spec_version: 3_002_000,
+            tuple: ASSET_HUB_TUPLE_EXTENSIONS,
+            extensions: ASSET_HUB_3002000_V0_EXTENSIONS,
         },
         KnownRuntime {
             env: "paseo-next-v2 / previewnet",

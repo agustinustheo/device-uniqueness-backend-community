@@ -8,6 +8,15 @@ Pre-1.0, a breaking change bumps the **minor**. Pin an exact `vX.Y.Z`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Runtime table knows `next-people-paseo` / `next-asset-hub-paseo` 3002000.**
+  The chain-types test table lists the extension-version-0 pipelines those
+  runtimes declare after individuality-community #101 (People
+  transaction_version 6, Asset Hub 22), so the tuple gate covers them. No
+  signing change: `v0.6.0` already signs correctly against them. The vendored
+  `testnet` metadata is unchanged until the PR merges.
+
 ## [0.6.0] - 2026-09-16
 
 ### Added
