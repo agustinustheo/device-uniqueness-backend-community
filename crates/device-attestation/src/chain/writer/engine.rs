@@ -56,8 +56,6 @@ pub(super) struct Cx<'a> {
     /// The attester authority to proxy for, or `None` when the signer *is* it.
     pub proxy_for: Option<[u8; 32]>,
     pub max_attempts: i32,
-    /// The ceiling every lane's adaptive batch size climbs back to.
-    pub batch_max: u16,
     pub finalize_timeout: Duration,
     pub lease_ttl: Duration,
 }
@@ -279,7 +277,7 @@ impl<L: Lane> Drain<L> {
                 self.nonce = Some(nonce + 1);
                 // A lone row still proves the lane works, so it grows the size
                 // back toward the max after a halving search.
-                self.batch.succeeded(cx.batch_max);
+                self.batch.succeeded();
                 L::record(cx.pool, cx.guard, r, Outcome::Landed).await
             }
             Err(e) => {
@@ -316,7 +314,7 @@ impl<L: Lane> Drain<L> {
         match L::submit_batch(cx, chain, nonce, rows).await {
             Ok(items) => {
                 self.nonce = Some(nonce + 1);
-                self.batch.succeeded(cx.batch_max);
+                self.batch.succeeded();
                 self.apply(cx, chain, rows, items).await
             }
             Err(e) => {
@@ -479,7 +477,7 @@ impl<L: Lane> Drain<L> {
         rows: &[(&Reservation, [u8; 32])],
         reason: &str,
     ) -> Result<(), WriterError> {
-        let backoff = self.batch.failed(cx.batch_max);
+        let backoff = self.batch.failed();
         tracing::warn!(
             lane = L::NAME,
             batch = rows.len(),

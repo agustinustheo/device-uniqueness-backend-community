@@ -52,7 +52,7 @@ Twelve crates today (plans may add more independently-deployable service crates)
   `metadata/metadata.<network>.scale` that `DUB_NETWORK` selects. Its `build.rs` is **the** network
   switch: `invite-tickets`, `dub` and `apidoc-gen` name it as their own `build =` script, and it
   emits `cfg(dub_network = "…")` plus `cfg(invite_tickets)` (`testnet`, not `polkadot`). Two values,
-  because two People runtimes — previewnet and paseo-next-v2 share one, so they share one build. Gate
+  because two People runtimes — `testnet` is paseo-next-v2, `polkadot` is polkadot-test. Gate
   network-specific code on those cfgs; never read `DUB_NETWORK` at runtime.
 - `chain-client` — reconnecting People Chain connection + the chain-writer signing key (`WriterSigner`); product-agnostic transport shared by the services.
 - `jwt-verify` — the cross-service auth contract: JWKS parsing, Ed25519 signing and verification, claims. It holds **both** halves, but only `device-attestation` is given `JWT_ED25519_SECRET`, so it is the only process that can construct the issuer; every other service builds a verifier from public key material alone. (The crate name predates the issuer moving in.)
@@ -60,7 +60,7 @@ Twelve crates today (plans may add more independently-deployable service crates)
 - `device-attestation` — the device attestation service (lib + the `voucher-mint` CLI; roles `device-attestation-api`, `device-attestation-chain-writer`, and the `registration-queue` advancer — with `QUEUE_ENABLED` on, its promotion is the only queue exit: down, claims park as `QUEUED` and the writer raises a stranded-queue warning).
 - `username-indexer` — username indexer + search service.
 - `invite-tickets` — synchronous invitation-credential claim service, the route the shipping apps call (lib; roles `invite-tickets-api` and `invite-tickets-pool`).
-- `turn` — stateless TURN credential issuer (coturn REST-API HMAC construction over a relay-shared secret; lib; role `turn-api`). No DB; when proof issuance is enabled, each environment's process maintains a read-only root cache from its own People Chain.
+- `turn` — stateless TURN credential issuer over a selectable provider (`TURN_PROVIDER`): **Cloudflare Realtime TURN** (default — one credential fetched per request, last good response cached for the duration of an outage) or a self-hosted **coturn** relay (credential computed locally from a shared HMAC secret). Only the selected provider's env vars are read, and setting `TURN_SECRET` while the provider is `cloudflare` is refused at boot. Lib; role `turn-api`. No DB; when proof issuance is enabled, each environment's process maintains a read-only root cache from its own People Chain.
 - `notifications` — thin `/api/v1/notify` relay (verify-only Ed25519 JWT, stateless, DB-free, per-subject rate limited; role `notify-relay`) with optional iOS APNs + Android FCM providers.
 - `apidoc-gen` — dev-only tool (not deployed) that renders the committed API reference from the service crates' `#[utoipa::path]` annotations. Run via `just openapi`.
 - `routegen` — dev-only tool (not deployed) that renders the committed edge config from `dub`'s route table. Run via `just routes`.

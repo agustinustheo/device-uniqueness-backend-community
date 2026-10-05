@@ -2230,6 +2230,7 @@ against the base of the lite username in the same claim.</td></tr>
             <span class="chip red">400</span>
             <span class="chip red">401</span>
             <span class="chip yellow">429</span>
+            <span class="chip red">503</span>
             <span class="chip blue">bearer JWT</span>
           </div>
         </div>
@@ -2265,11 +2266,13 @@ against the base of the lite username in the same claim.</td></tr>
             </div>
 <pre><span class="p">{</span>
   <span class="s">"servers"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s">"stun:stun.example.com:3478"</span><span class="p">,</span>
-    <span class="s">"turn:turn.example.com:3478?transport=udp"</span>
+    <span class="s">"stun:stun.cloudflare.com:3478"</span><span class="p">,</span>
+    <span class="s">"turn:turn.cloudflare.com:3478?transport=udp"</span><span class="p">,</span>
+    <span class="s">"turn:turn.cloudflare.com:3478?transport=tcp"</span><span class="p">,</span>
+    <span class="s">"turns:turn.cloudflare.com:5349?transport=tcp"</span>
   <span class="p">]</span><span class="p">,</span>
-  <span class="s">"username"</span><span class="p">:</span> <span class="s">"1784757652:0a79e3412921701a"</span><span class="p">,</span>
-  <span class="s">"password"</span><span class="p">:</span> <span class="s">"qmg5g7d1bXzY0qZkRUqtIPEIKjA="</span><span class="p">,</span>
+  <span class="s">"username"</span><span class="p">:</span> <span class="s">"d2f4a1c6b8e05379"</span><span class="p">,</span>
+  <span class="s">"password"</span><span class="p">:</span> <span class="s">"9f83b1e6c0a74d25b3f8e1a70c4d69b2"</span><span class="p">,</span>
   <span class="s">"ttl"</span><span class="p">:</span> <span class="n">1800</span>
 <span class="p">}</span></pre>
           </div>
@@ -2279,7 +2282,7 @@ against the base of the lite username in the same claim.</td></tr>
                 <span class="sc-code c201">201</span>
                 <span class="sc-label">CREATED</span>
               </div>
-              <div class="sc-desc">Credentials minted: <code>username</code> is <code>{unixExpiry}:{hexId}</code> (expiry = now + TTL), <code>password</code> is the base64 HMAC over <code>username</code> under the secret shared with the TURN relay (the coturn REST-API construction), <code>servers</code> echoes the configured ICE server list.</div>
+              <div class="sc-desc">Credentials issued: <code>username</code> and <code>password</code> are an opaque pair from the deployment's configured <code>TURN_PROVIDER</code> — do not parse either — <code>servers</code> is the ICE server list to use them against, and <code>ttl</code> is the seconds of life remaining on the credential.</div>
             </div>
             <div class="status-card">
               <div class="sc-head">
@@ -2301,6 +2304,13 @@ against the base of the lite username in the same claim.</td></tr>
                 <span class="sc-label">RATE_LIMITED</span>
               </div>
               <div class="sc-desc">Per-subject rate limit exceeded (with <code>Retry-After</code>).</div>
+            </div>
+            <div class="status-card">
+              <div class="sc-head">
+                <span class="sc-code c503">503</span>
+                <span class="sc-label">UNAVAILABLE</span>
+              </div>
+              <div class="sc-desc">The credential provider could not issue and no cached credential was usable (with <code>Retry-After</code>). Only reachable on the Cloudflare provider, which depends on an upstream call; a coturn deployment computes credentials locally and never returns this.</div>
             </div>
           </div>
         </div>
@@ -2367,11 +2377,13 @@ server's accepted skew.</td></tr>
             </div>
 <pre><span class="p">{</span>
   <span class="s">"servers"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s">"stun:stun.example.com:3478"</span><span class="p">,</span>
-    <span class="s">"turn:turn.example.com:3478?transport=udp"</span>
+    <span class="s">"stun:stun.cloudflare.com:3478"</span><span class="p">,</span>
+    <span class="s">"turn:turn.cloudflare.com:3478?transport=udp"</span><span class="p">,</span>
+    <span class="s">"turn:turn.cloudflare.com:3478?transport=tcp"</span><span class="p">,</span>
+    <span class="s">"turns:turn.cloudflare.com:5349?transport=tcp"</span>
   <span class="p">]</span><span class="p">,</span>
-  <span class="s">"username"</span><span class="p">:</span> <span class="s">"1784757652:0a79e3412921701a"</span><span class="p">,</span>
-  <span class="s">"password"</span><span class="p">:</span> <span class="s">"qmg5g7d1bXzY0qZkRUqtIPEIKjA="</span><span class="p">,</span>
+  <span class="s">"username"</span><span class="p">:</span> <span class="s">"d2f4a1c6b8e05379"</span><span class="p">,</span>
+  <span class="s">"password"</span><span class="p">:</span> <span class="s">"9f83b1e6c0a74d25b3f8e1a70c4d69b2"</span><span class="p">,</span>
   <span class="s">"ttl"</span><span class="p">:</span> <span class="n">1800</span>
 <span class="p">}</span></pre>
           </div>
@@ -2381,7 +2393,7 @@ server's accepted skew.</td></tr>
                 <span class="sc-code c201">201</span>
                 <span class="sc-label">CREATED</span>
               </div>
-              <div class="sc-desc">Proof accepted; returns servers, username, password, and the configured TTL. Credentials expire <code>ttl</code> seconds after issuance; no alias appears in the response.</div>
+              <div class="sc-desc">Proof accepted; returns the servers and an opaque username/password pair from the configured <code>TURN_PROVIDER</code>, and <code>ttl</code>, the seconds of life remaining on them. No alias appears in the response, and nothing recoverable from the proof is derivable from the credential.</div>
             </div>
             <div class="status-card">
               <div class="sc-head">
@@ -2409,7 +2421,7 @@ server's accepted skew.</td></tr>
                 <span class="sc-code c503">503</span>
                 <span class="sc-label">UNAVAILABLE</span>
               </div>
-              <div class="sc-desc">Verification unavailable: no ring-root snapshot yet (chain unreachable since boot), the bounded waiter queue is full, or all verification slots remained busy for the bounded wait. Saturation responses include <code>Retry-After</code>.</div>
+              <div class="sc-desc">Verification unavailable: no ring-root snapshot yet (chain unreachable since boot), the bounded waiter queue is full, or all verification slots remained busy for the bounded wait. Also returned when the proof verified but the credential provider could not issue and no cached credential was usable, which only the Cloudflare provider can do. Saturation and provider responses include <code>Retry-After</code>.</div>
             </div>
           </div>
         </div>

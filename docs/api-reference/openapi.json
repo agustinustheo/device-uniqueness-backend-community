@@ -971,7 +971,7 @@
         },
         "responses": {
           "201": {
-            "description": "Credentials minted: `username` is `{unixExpiry}:{hexId}` (expiry = now + TTL), `password` is the base64 HMAC over `username` under the secret shared with the TURN relay (the coturn REST-API construction), `servers` echoes the configured ICE server list.",
+            "description": "Credentials issued: `username` and `password` are an opaque pair from the deployment's configured `TURN_PROVIDER` — do not parse either — `servers` is the ICE server list to use them against, and `ttl` is the seconds of life remaining on the credential.",
             "content": {
               "application/json": {
                 "schema": {
@@ -988,6 +988,9 @@
           },
           "429": {
             "description": "Per-subject rate limit exceeded (with `Retry-After`)."
+          },
+          "503": {
+            "description": "The credential provider could not issue and no cached credential was usable (with `Retry-After`). Only reachable on the Cloudflare provider, which depends on an upstream call; a coturn deployment computes credentials locally and never returns this."
           }
         },
         "security": [
@@ -1016,7 +1019,7 @@
         },
         "responses": {
           "201": {
-            "description": "Proof accepted; returns servers, username, password, and the configured TTL. Credentials expire `ttl` seconds after issuance; no alias appears in the response.",
+            "description": "Proof accepted; returns the servers and an opaque username/password pair from the configured `TURN_PROVIDER`, and `ttl`, the seconds of life remaining on them. No alias appears in the response, and nothing recoverable from the proof is derivable from the credential.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1035,7 +1038,7 @@
             "description": "This person's redemption limit was exceeded (with `Retry-After`)."
           },
           "503": {
-            "description": "Verification unavailable: no ring-root snapshot yet (chain unreachable since boot), the bounded waiter queue is full, or all verification slots remained busy for the bounded wait. Saturation responses include `Retry-After`."
+            "description": "Verification unavailable: no ring-root snapshot yet (chain unreachable since boot), the bounded waiter queue is full, or all verification slots remained busy for the bounded wait. Also returned when the proof verified but the credential provider could not issue and no cached credential was usable, which only the Cloudflare provider can do. Saturation and provider responses include `Retry-After`."
           }
         }
       }
@@ -1709,7 +1712,7 @@
       },
       "IssueResponse": {
         "type": "object",
-        "description": "The 201 body: coturn REST-API ephemeral credentials plus the ICE\nserver list.",
+        "description": "The 201 body: an ephemeral TURN credential and the ICE servers to use it\nagainst.\n\nBoth fields' provenance depends on the deployment's `TURN_PROVIDER`, and the\nshape of `username`/`password` differs between them — treat both as opaque\nstrings to stay portable across providers.",
         "required": [
           "servers",
           "username",
@@ -1722,26 +1725,28 @@
             "items": {
               "type": "string"
             },
-            "description": "Configured ICE server URLs (`stun:` / `turn:` forms), echoed verbatim.",
+            "description": "The ICE server URLs (`stun:` / `turn:` / `turns:` forms) to negotiate\nagainst. On the Cloudflare provider these are what Cloudflare returned\nwith the credential, flattened into one list in response order; on the\ncoturn provider they are the operator's configured `ICE_SERVERS`.",
             "example": [
-              "stun:stun.example.com:3478",
-              "turn:turn.example.com:3478?transport=udp"
+              "stun:stun.cloudflare.com:3478",
+              "turn:turn.cloudflare.com:3478?transport=udp",
+              "turn:turn.cloudflare.com:3478?transport=tcp",
+              "turns:turn.cloudflare.com:5349?transport=tcp"
             ]
           },
           "username": {
             "type": "string",
-            "description": "`{unixExpiry}:{hexId}`. JWT issuance uses mint time + configured TTL\nand 8 random id bytes; proof issuance uses mint time + configured TTL\nand a deterministic opaque 16-byte id derived from product and alias.",
-            "example": "1784757652:0a79e3412921701a"
+            "description": "The credential's username. **Opaque — do not parse.** Cloudflare mints\nan unstructured value per request; a coturn deployment uses that relay's\nREST-API form, `{unixExpiry}:{hexId}`. Neither carries anything\nrecoverable about the caller.",
+            "example": "d2f4a1c6b8e05379"
           },
           "password": {
             "type": "string",
-            "description": "Base64 HMAC over `username` under the relay-shared secret (algorithm\nper deployment config, default HMAC-SHA1).",
-            "example": "qmg5g7d1bXzY0qZkRUqtIPEIKjA="
+            "description": "The matching password. **Opaque — do not parse.** Minted by Cloudflare,\nor on the coturn provider the base64 HMAC over `username` under the\nrelay-shared secret.",
+            "example": "9f83b1e6c0a74d25b3f8e1a70c4d69b2"
           },
           "ttl": {
             "type": "integer",
             "format": "int64",
-            "description": "Credential time-to-live in whole seconds (the configured `ttl_secs`).",
+            "description": "Seconds of life remaining on this credential. On the coturn provider\nalways the configured `TURN_TTL_SECS`, since the credential is minted to\norder. On the Cloudflare provider the TTL Cloudflare granted, or less if\na cached credential was served because Cloudflare was briefly\nunreachable.",
             "example": 1800,
             "minimum": 0
           }
@@ -1970,7 +1975,7 @@
     },
     {
       "name": "TURN",
-      "description": "Short-lived TURN credentials for WebRTC ICE negotiation: the coturn REST-API construction (username = expiry:id, password = HMAC over the username) minted against a secret shared with the TURN relay. Stateless — nothing is stored. Issuance is authorized either by an access JWT (`/issue`) or, when enabled, by a personhood ring-VRF proof over a client-timestamped message (`/issue-with-proof`)."
+      "description": "Short-lived TURN credentials for WebRTC ICE negotiation. The credential source is the deployment's `TURN_PROVIDER`: **Cloudflare Realtime TURN** (the default), which mints each credential itself — one per request, so callers are mutually unlinkable, with the last response cached and served if Cloudflare is briefly unreachable — or a self-hosted **coturn** relay, where this service computes the credential from a secret shared with the relay and callers are kept unlinkable by an opaque keyed id instead. Either way nothing is persisted. Issuance is authorized either by an access JWT (`/issue`) or, when enabled, by a personhood ring-VRF proof over a client-timestamped message (`/issue-with-proof`)."
     },
     {
       "name": "Notifications",

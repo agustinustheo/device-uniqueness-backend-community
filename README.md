@@ -1,16 +1,16 @@
 # Device Uniqueness Backend
 
 > [!WARNING]
-> The following is a proof-of-concept. This open source code is provided for
-> research, experimentation, and developer education only. This code has not been
-> audited, is actively experimental, and may contain bugs, vulnerabilities, or
-> incomplete features. Use at your own risk.
-
-Parity doesn’t deploy the code but may update it based on community feedback.
-
-If you experience problems with any product or service that was built on or
-deployed from this code, you should contact the third party who deployed the code
-in its amended form, not Parity.
+> This open source code is provided for research, experimentation,
+> and developer education only. This code has not been audited,
+> is actively experimental, and may contain bugs, vulnerabilities, or incomplete
+> features. Use at your own risk and obtain legal advice as appropriate - DYOR.
+>
+> Parity doesn’t deploy the code but may update it based on community feedback.
+>
+> If you experience problems with any product or service that was built
+> on or deployed from this code, you should contact the third party who
+> deployed the code in its amended form, not Parity.
 
 A Rust backend that proves a device is a distinct physical device, and registers
 a username for it on Polkadot's People Chain — plus the sibling services a
@@ -40,7 +40,7 @@ each of which deploys independently behind a single-URL
   a new registration is searchable a finality trail sooner.
 - **`invite-tickets-api`** / **`invite-tickets-pool`** — synchronous
   invitation-ticket claim, and the keypair pool that keeps it stocked.
-- **`turn-api`** — a stateless TURN credential issuer (coturn REST API).
+- **`turn-api`** — a stateless TURN credential issuer (Cloudflare Realtime TURN, or a self-hosted coturn relay).
 - **`notify-relay`** — a stateless APNs / FCM push relay.
 
 Plus **`voucher-mint`**, an operator CLI for minting registration vouchers
@@ -105,10 +105,11 @@ with environment from `.env.example`.
 
 ### The network you are starting from
 
-Out of the box `.env.example` points at **PreviewNet**
-(`wss://previewnet.substrate.dev`), a public test network that is wiped and
-re-spawned routinely, and uses the well-known development keys `//Alice` and
-`//Bob`. That is enough for the stack to start and for the read paths to work.
+Out of the box `.env.example` points at **Paseo Next v2**
+(`wss://paseo-people-next-system-rpc.polkadot.io` and its Asset Hub), a public
+test network that is wiped and re-spawned routinely, and uses the well-known
+development keys `//Alice` and `//Bob`. That is enough for the stack to start
+and for the read paths to work.
 
 For anything past that you need, on whichever network you target:
 
@@ -117,15 +118,14 @@ For anything past that you need, on whichever network you target:
 - for invites, an inviter account holding `AvailableInvites` quota.
 
 The binary is **built for one People runtime**: `DUB_NETWORK` is `testnet` (the
-default — previewnet and paseo-next-v2) or `polkadot` (polkadot-test). It picks
+default — paseo-next-v2) or `polkadot` (polkadot-test). It picks
 the vendored People metadata and, on `polkadot` — whose runtime has no `Game` /
 `ProofOfInk` — leaves the invite-tickets services out. Set it in `.env` before
 building, together with `COMPOSE_PROFILES` and the RPC endpoints; see
 [Choosing a network](docs/operations.md#choosing-a-network).
 
-Paseo's People Chain is
-`wss://paseo-people-next-system-rpc.polkadot.io` — point `ASSET_HUB_RPC_URL` at
-an Asset Hub on the same network running the `signed_at` `reserve_name`. The
+If you repoint `PEOPLE_RPC_URL`, point `ASSET_HUB_RPC_URL` at an Asset Hub on
+the same network running the `signed_at` `reserve_name` in the same edit. The
 dotNS lane is not optional; where the shape does not match, the writer parks the
 lane rather than submitting.
 
@@ -170,8 +170,8 @@ test in `just check` fails if either is stale. Never hand-edit them.
 `vX.Y.Z` tag via the [release workflow](.github/workflows/release.yml). Each one
 attaches:
 
-Every asset is built twice, once per People runtime — `testnet` (previewnet and
-paseo-next-v2) and `polkadot` (polkadot-test) — because `DUB_NETWORK` is fixed
+Every asset is built twice, once per People runtime — `testnet` (paseo-next-v2)
+and `polkadot` (polkadot-test) — because `DUB_NETWORK` is fixed
 when the binary is built. Take the pair matching the chain you point at;
 `dub --help` prints the network a binary was built for.
 

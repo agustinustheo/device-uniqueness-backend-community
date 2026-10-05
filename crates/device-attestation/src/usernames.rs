@@ -99,6 +99,7 @@ pub(crate) async fn check_rate_limit(state: &AppState, subject: &str) -> Usernam
         .limiter
         .allow(key)
         .await
+        .map(|_| ())
         .map_err(|err| UsernamesError::RateLimited {
             retry_after_secs: err.wait_time_from(state.limiter.current_time()).as_secs(),
         })
