@@ -50,6 +50,7 @@ time = "0.3"
 rand = "0.8"
 
 [dev-dependencies]
+subxt-rpcs = { workspace = true, features = ["mock-rpc-client"] }
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 base64 = "0.22"

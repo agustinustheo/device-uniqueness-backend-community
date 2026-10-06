@@ -10,13 +10,6 @@ Pre-1.0, a breaking change bumps the **minor**. Pin an exact `vX.Y.Z`.
 
 ### Changed
 
-- **Runtime table knows `next-people-paseo` / `next-asset-hub-paseo` 3002000.**
-  The chain-types test table lists the extension-version-0 pipelines those
-  runtimes declare after individuality-community #101 (People
-  transaction_version 6, Asset Hub 22), so the tuple gate covers them. No
-  signing change: `v0.6.0` already signs correctly against them. The vendored
-  `testnet` metadata is unchanged until the PR merges.
-
 - **`turn-api` gains a credential provider, and defaults to Cloudflare Realtime
   TURN.** The relay this service was built against is decommissioned, and
   Cloudflare does not do shared-secret HMAC credentials: it mints both halves
@@ -76,6 +69,13 @@ Pre-1.0, a breaking change bumps the **minor**. Pin an exact `vX.Y.Z`.
   are unchanged — they were already the union).
 
 ### Fixed
+
+- **Invite-ticket batches sign V4 extrinsics with version-0 extensions.** Both
+  direct and proxy submissions now use the same signing helper as the writer
+  lanes, so they keep working when the testnet People runtime advertises
+  multiple extension versions (individuality-community #101). Previously,
+  subxt selected the highest extension version, producing a V4 extrinsic the
+  node could not decode. Vendored metadata is unchanged.
 
 - **The quickstart stack boots again.** `.env.example` and compose selected the
   `cloudflare` provider with no credentials to go with it — no placeholder can

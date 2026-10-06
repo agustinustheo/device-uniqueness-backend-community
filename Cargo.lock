@@ -2413,6 +2413,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "subxt",
+ "subxt-rpcs",
  "subxt-signer",
  "thiserror 2.0.18",
  "time",

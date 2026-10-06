@@ -95,33 +95,8 @@ impl PeopleChain {
         signer: &WriterSigner,
         proxy_for: Option<&AccountId32>,
     ) -> anyhow::Result<FinalizedBatch> {
-        let calls: Vec<RuntimeCall> = tickets
-            .iter()
-            .map(|ticket| set_invite_ticket_call(dim, *ticket))
-            .collect();
-        // Nonce comes from the chain at sign time: this maintainer submits
-        // one extrinsic at a time, so there is no in-flight lane to track.
-        let params = PeopleExtrinsicParamsBuilder::new().build();
-        let mut tx_client = self.client.tx().await?;
-
-        // The proxy wrap changes the payload's static type, so sign per branch.
-        let signed = match proxy_for {
-            Some(real) => {
-                let inner =
-                    RuntimeCall::Utility(pallet_utility::pallet::Call::force_batch { calls });
-                let payload = people::tx().proxy().proxy(
-                    MultiAddress::Id(*real),
-                    // Legacy signed with force_proxy_type = Any.
-                    Some(ProxyType::Any),
-                    inner,
-                );
-                tx_client.create_signed(&payload, signer, params).await?
-            }
-            None => {
-                let payload = people::tx().utility().force_batch(calls);
-                tx_client.create_signed(&payload, signer, params).await?
-            }
-        };
+        let at = self.client.at_current_block().await?;
+        let signed = build_signed_ticket_batch(&at, tickets, dim, signer, proxy_for).await?;
         let tx_hash = format!("{:?}", signed.hash());
         tracing::info!(batch = tickets.len(), dim = dim.as_str(), tx = %tx_hash, "submitting ticket batch");
 
@@ -158,6 +133,50 @@ impl PeopleChain {
     }
 }
 
+// Keep construction separate from submission so both direct and proxy batches
+// can be checked against multi-version metadata without submitting to a node.
+async fn build_signed_ticket_batch(
+    at: &subxt::client::ClientAtBlock<
+        PeopleConfig,
+        subxt::client::OnlineClientAtBlockImpl<PeopleConfig>,
+    >,
+    tickets: &[AccountId32],
+    dim: Dim,
+    signer: &WriterSigner,
+    proxy_for: Option<&AccountId32>,
+) -> Result<
+    subxt::tx::SubmittableTransaction<
+        PeopleConfig,
+        subxt::client::OnlineClientAtBlockImpl<PeopleConfig>,
+    >,
+    subxt::error::ExtrinsicError,
+> {
+    let calls: Vec<RuntimeCall> = tickets
+        .iter()
+        .map(|ticket| set_invite_ticket_call(dim, *ticket))
+        .collect();
+    // Nonce comes from the chain at sign time: this maintainer submits
+    // one extrinsic at a time, so there is no in-flight lane to track.
+    let params = PeopleExtrinsicParamsBuilder::new().build();
+
+    // V4 always uses extension version 0, even if metadata advertises a
+    // higher version for general transactions. The proxy changes the type.
+    match proxy_for {
+        Some(real) => {
+            let inner = RuntimeCall::Utility(pallet_utility::pallet::Call::force_batch { calls });
+            let payload =
+                people::tx()
+                    .proxy()
+                    .proxy(MultiAddress::Id(*real), Some(ProxyType::Any), inner);
+            chain_client::create_signed_v4(at, &payload, signer, params).await
+        }
+        None => {
+            let payload = people::tx().utility().force_batch(calls);
+            chain_client::create_signed_v4(at, &payload, signer, params).await
+        }
+    }
+}
+
 /// A finalized `force_batch`: ordered item outcomes plus its block hash.
 #[derive(Debug)]
 pub struct FinalizedBatch {
@@ -181,3 +200,6 @@ fn set_invite_ticket_call(dim: Dim, ticket: AccountId32) -> RuntimeCall {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

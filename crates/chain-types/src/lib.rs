@@ -519,10 +519,11 @@ mod tests {
         "StorageWeightReclaim",
     ];
 
-    /// What `next-people-paseo` 3002000 (individuality-community #101,
-    /// transaction_version 6) declares at extension version 0: the frozen
-    /// standard pipeline with the Individuality gates moved into a separate
-    /// version-1 pipeline. `CheckMetadataHash` is new against 3000000.
+    /// Version-0 pipeline of the original individuality-community #101 build
+    /// of `next-people-paseo` at spec 3002000, transaction_version 6, NOT the
+    /// v0.3.3 release (which still used transaction_version 5 and the old pipeline).
+    /// Unchanged at #101 revision de94dd6f58af567748df185c16dee7296f493ce7,
+    /// spec 3003000, transaction_version 6. Individuality gates live in version 1.
     const PEOPLE_3002000_V0_EXTENSIONS: &[&str] = &[
         "AuthorizeCall",
         "CheckNonZeroSender",
@@ -537,9 +538,10 @@ mod tests {
         "StorageWeightReclaim",
     ];
 
-    /// What `next-asset-hub-paseo` 3002000 (individuality-community #101,
-    /// transaction_version 22) declares at extension version 0: the frozen
-    /// standard pipeline, with `PrevalidateAttests` new against 3000000.
+    /// Version-0 pipeline of the original individuality-community #101 build
+    /// of `next-asset-hub-paseo` at spec 3002000, transaction_version 22, NOT
+    /// the v0.3.3 release. Unchanged at #101 revision
+    /// de94dd6f58af567748df185c16dee7296f493ce7, spec 3003000, transaction_version 22.
     const ASSET_HUB_3002000_V0_EXTENSIONS: &[&str] = &[
         "AuthorizeCall",
         "CheckNonZeroSender",
@@ -556,10 +558,9 @@ mod tests {
         "StorageWeightReclaim",
     ];
 
-    /// Every runtime a deployment is known to have talked to. The tuples are
-    /// the union of these sets, not a snapshot of the newest one: an entry
-    /// stays here — and its gate stays in the tuple — so that a binary
-    /// pointed at a node that has not upgraded yet can still sign.
+    /// Released runtimes and explicitly labelled PR builds whose extension
+    /// identifiers must be covered by the signing tuples. This checks name
+    /// coverage only; it does not prove which extension version a caller encodes.
     const KNOWN_RUNTIMES: &[KnownRuntime] = &[
         KnownRuntime {
             env: "polkadot-test",
@@ -576,16 +577,30 @@ mod tests {
             extensions: ASSET_HUB_POLKADOT_2005000_EXTENSIONS,
         },
         KnownRuntime {
-            env: "paseo-next-v2 (individuality-community #101)",
+            env: "#101 original PR build, tx 6 (not v0.3.3)",
             spec_name: "next-people-paseo",
             spec_version: 3_002_000,
             tuple: TUPLE_EXTENSIONS,
             extensions: PEOPLE_3002000_V0_EXTENSIONS,
         },
         KnownRuntime {
-            env: "paseo-next-v2 asset hub (individuality-community #101)",
+            env: "#101 original PR build, asset hub tx 22 (not v0.3.3)",
             spec_name: "next-asset-hub-paseo",
             spec_version: 3_002_000,
+            tuple: ASSET_HUB_TUPLE_EXTENSIONS,
+            extensions: ASSET_HUB_3002000_V0_EXTENSIONS,
+        },
+        KnownRuntime {
+            env: "#101 PR build de94dd6f, People tx 6 (unreleased)",
+            spec_name: "next-people-paseo",
+            spec_version: 3_003_000,
+            tuple: TUPLE_EXTENSIONS,
+            extensions: PEOPLE_3002000_V0_EXTENSIONS,
+        },
+        KnownRuntime {
+            env: "#101 PR build de94dd6f, Asset Hub tx 22 (unreleased)",
+            spec_name: "next-asset-hub-paseo",
+            spec_version: 3_003_000,
             tuple: ASSET_HUB_TUPLE_EXTENSIONS,
             extensions: ASSET_HUB_3002000_V0_EXTENSIONS,
         },

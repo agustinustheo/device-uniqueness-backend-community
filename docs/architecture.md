@@ -416,6 +416,10 @@ Operational invariants an agent must respect when touching the code.
   **derived, not configured**: `INVITER_ADDRESS` names the account holding the invites, and a
   signing key whose own account differs from it wraps the batch in
   `Proxy.proxy(real = INVITER_ADDRESS, force_proxy_type = Any)`.
+  Both direct and proxy batches are V4 signed extrinsics using the metadata's
+  version-0 extension list via `chain_client::create_signed_v4`, as in the writer
+  lanes. Higher extension versions advertised for general transactions do not
+  change the V4 encoding.
 - **`username-indexer` serializes projection writes on one Postgres advisory lock.** Bootstrap and
   the incremental sync loop share one lock id; a full snapshot bootstrap runs **only when there is no
   usable `sync_state` checkpoint**, and each sync pass takes the lock with `pg_try_advisory_lock`
